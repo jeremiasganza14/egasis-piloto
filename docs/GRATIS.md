@@ -1,10 +1,20 @@
 # Egasis gratis por ahora: Render Free + Neon Free
 
-La preferencia vigente es **costo de alojamiento USD 0, sin tarjeta, compras ni upgrades**. Esta preparación permite publicar la aplicación completa —interfaz y API— como piloto en simulación. El archivo [render.yaml](../render.yaml) está listo; esta guía no acredita que exista ya un despliegue público.
+La preferencia vigente es **costo de alojamiento USD 0, sin tarjeta, compras ni upgrades**. El 15 de septiembre de 2026 se publicó la interfaz y API en [egasis-piloto.onrender.com](https://egasis-piloto.onrender.com), como piloto en simulación. La construcción, el arranque y las respuestas HTTP públicas están comprobados; todavía faltan el alta del propietario, el recorrido autenticado y la prueba de persistencia después de reiniciar. La configuración se conserva en [render.yaml](../render.yaml).
+
+## Instalación actual y evidencia
+
+- Código privado: `jeremiasganza14/egasis-piloto`, commit desplegado `92fb10bb614d22e7303b739c687cbeabf7b00a21`.
+- Render Free en Ohio: servicio `srv-dakrvurl550s73alf3m0`, Blueprint `exs-daklqugu01pc73fjb1l0` y despliegue `dep-dakrvvbl550s73alf650`. El panel mostró `Deploy succeeded` / `Live`; construcción de 1 minuto y 10 segundos.
+- Base nueva Neon Free `Egasis piloto`, PostgreSQL 17 en Ohio. Se configuró su conexión privada en Render con autorización del usuario. Los proyectos y servicios anteriores se conservaron.
+- Registros del arranque: `configuration_ready: true`, backend PostgreSQL, `simulation: true`, registro por invitación y arranque completo. `GET /api/health` y `GET /` respondieron HTTP 200.
+- Sincronización del Blueprint desactivada: **Auto Sync: No** y **Sync paused**, verificados en el panel. No hay worker permanente.
+
+Antes de crear el servicio, la cuenta Render mostró Hobby, sin tarjeta, gasto y proyección de USD 0 y cuotas disponibles. Las cuotas de Render se comparten con los servicios anteriores; no se modificaron sus configuraciones. La publicación no demuestra todavía un recorrido autenticado ni un piloto con clientes reales. [Estado completo de la entrega](ESTADO_ENTREGA.md).
 
 ## Qué incluye esta opción
 
-Un único servicio web Render **Free** sirve Egasis y una base PostgreSQL Neon **Free** conserva sus datos. No se crea una base de Render, un disco, un worker, un cron ni un servicio de pago. Se usa el subdominio del proveedor; no hace falta comprar dominio. Los despliegues automáticos están desactivados en la plantilla.
+Un único servicio web Render **Free** sirve Egasis y una base PostgreSQL Neon **Free** conserva sus datos. No se creó una base de Render, un disco, un worker, un cron ni un servicio de pago para este piloto. Se usa el subdominio del proveedor; no hace falta comprar dominio. Los despliegues automáticos están desactivados en la plantilla y la sincronización automática del Blueprint está desactivada en el panel.
 
 La interfaz permite trabajar con contactos, campañas, conversaciones de ejemplo, aprendizajes, materiales y reuniones. El botón de ciclo de simulación avanza las pruebas cuando lo solicita la persona responsable. No hay motor continuo ni correo real. Para mantener costo cero, el piloto comienza sin conectar Stripe, IA, Apollo, correo o calendario externos: sus cuentas, permisos y consumos son independientes de este alojamiento.
 
@@ -16,7 +26,9 @@ Neon Free no exige tarjeta ni tiene un plazo de prueba: incluye **0,5 GB de alma
 
 No agregar una tarjeta ni elegir un plan de pago para resolver límites. Si una cuenta exige verificación o un upgrade, dejar ese paso pendiente. Esta opción no promete campañas reales funcionando las 24 horas.
 
-## Preparación en los paneles
+## Referencia de instalación
+
+Los pasos de creación siguientes documentan cómo se instaló el piloto y permiten reproducirlo. Para continuar con la instalación actual, usar los recursos identificados arriba y avanzar a las comprobaciones pendientes; no crear duplicados ni reutilizar los proyectos anteriores.
 
 ### 1. Código y base
 
@@ -29,9 +41,9 @@ No agregar una tarjeta ni elegir un plan de pago para resolver límites. Si una 
 
 En Render, crear un Blueprint desde el repositorio y seleccionar `render.yaml`. Revisar el resumen antes de aplicarlo: debe mostrar únicamente `egasis-piloto`, tipo web, plan **Free**. La plantilla solicita `EGASIS_DATABASE_URL`; pegar allí la conexión privada de Neon. No agregar Render Postgres ni otros recursos.
 
-La plantilla establece estas variables:
+La región de la web se fija en Ohio, igual que la base Neon del piloto. Después de crear un Blueprint, desactivar también **Settings → Auto Sync**. `autoDeployTrigger: off` evita despliegues por cambios de código, pero la sincronización automática del Blueprint es una opción separada. En la instalación actual, ambas opciones ya están desactivadas.
 
-La región de la web se fija en Ohio, igual que la base Neon del piloto. Después de crear el Blueprint, desactivar también **Settings → Auto Sync**. `autoDeployTrigger: off` evita despliegues por cambios de código, pero la sincronización automática del Blueprint es una opción separada.
+La plantilla establece estas variables:
 
 | Variable | Configuración |
 | --- | --- |
@@ -61,14 +73,14 @@ El comprobador no abre la base ni la red y no imprime los valores de las variabl
 
 En una base completamente vacía, el primer arranque de Egasis crea el esquema versionado actual. Una base con versión antigua requiere la actualización explícita de la sección siguiente; la aplicación no la modifica silenciosamente.
 
-Cuando el servicio esté listo:
+Comprobaciones de la instalación actual:
 
-1. Abrir su dirección HTTPS y comprobar que `/api/health` responde.
-2. Crear el espacio con la invitación del panel, sin publicarla, e ingresar como propietario.
-3. Confirmar que la interfaz indique simulación. Cargar los datos de ejemplo.
-4. Revisar una campaña, activar sus días y horario de prueba y procesar un ciclo simulado desde la interfaz. Comprobar el mensaje y su estado **simulado**; no debe llegar correo a nadie.
-5. Cerrar y volver a abrir la sesión. Comprobar que los contactos y cambios siguen presentes. Repetir después de un reinicio del servicio: deben seguir en Neon.
-6. Registrar la dirección pública y el resultado del recorrido; recién entonces se puede afirmar que el piloto está publicado y probado. Seguir la [guía de uso y medición](GUIA_DEL_PILOTO.md).
+1. **Completado:** dirección HTTPS publicada, `GET /` y `GET /api/health` con respuesta HTTP 200.
+2. **Pendiente:** crear el espacio con la invitación del panel, sin publicarla, e ingresar como propietario.
+3. **Pendiente:** confirmar que la interfaz autenticada indique simulación y cargar los datos de ejemplo. Los registros del servidor ya muestran simulación activa.
+4. **Pendiente:** revisar una campaña, activar sus días y horario de prueba y procesar un ciclo simulado desde la interfaz. Comprobar el mensaje y su estado **simulado**; no debe llegar correo a nadie.
+5. **Pendiente:** cerrar y volver a abrir la sesión, y comprobar que los contactos y cambios siguen presentes. Repetir después de un reinicio del servicio: deben seguir en Neon.
+6. **Pendiente:** registrar el resultado del recorrido. La publicación está comprobada; el recorrido completo del piloto público aún no. Seguir la [guía de uso y medición](GUIA_DEL_PILOTO.md).
 
 ## Actualizaciones y conservación de datos
 
@@ -94,4 +106,4 @@ python -m egasis.worker
 
 Solo trabaja mientras la computadora esté encendida, conectada y con el proceso abierto. Si duerme o se cierra, no envía ni lee nuevas respuestas hasta que vuelva. También consume la cuota de Neon. Antes de una transición real, pausar campañas, revisar trabajos de prueba y comprobar la configuración de simulación en ambos procesos. Un worker real no debe procesar por accidente campañas creadas para ensayar.
 
-Render Free sigue bloqueando los puertos SMTP: poner allí el worker o desactivar la simulación no elimina ese bloqueo. Tampoco se puede presentar esta alternativa local como envío permanente gratuito. No se contrató ningún proveedor ni se activó correo real en esta preparación.
+Render Free sigue bloqueando los puertos SMTP: poner allí el worker o desactivar la simulación no elimina ese bloqueo. Tampoco se puede presentar esta alternativa local como envío permanente gratuito. No se contrató ningún servicio pago ni se activó correo real al publicar este piloto.
