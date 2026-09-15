@@ -2,7 +2,7 @@
 
 Plataforma web de prospección para negocios, profesionales, agencias y equipos que venden productos o servicios. Cada espacio configura su oferta, público, firma, campañas y cuentas de correo. No está limitada a vender automatización con IA.
 
-Esta versión permite probar el circuito completo localmente. La guía de uso está en [GUIA_DEL_PILOTO.md](docs/GUIA_DEL_PILOTO.md), la publicación gratuita en [GRATIS.md](docs/GRATIS.md) y la evidencia conjunta en [ESTADO_ENTREGA.md](docs/ESTADO_ENTREGA.md). Inicia en **simulación**, con facturación opcional y sin iniciar el proceso de envíos automáticamente. Las pruebas automatizadas usan bases temporales y proveedores simulados: no acreditan entregabilidad real, cobros reales ni capacidad de producción bajo carga.
+El piloto está publicado en [egasis-piloto.onrender.com](https://egasis-piloto.onrender.com), con registro por invitación y **simulación** activa. También permite probar el circuito completo localmente. La guía de uso está en [GUIA_DEL_PILOTO.md](docs/GUIA_DEL_PILOTO.md), la instalación gratuita en [GRATIS.md](docs/GRATIS.md) y la evidencia conjunta en [ESTADO_ENTREGA.md](docs/ESTADO_ENTREGA.md). La facturación es opcional y el proceso continuo de envíos no inicia automáticamente. Las pruebas automatizadas usan bases temporales y proveedores simulados: no acreditan entregabilidad real, cobros reales ni capacidad de producción bajo carga.
 
 ## Inicio local
 
@@ -137,4 +137,4 @@ Antes de actualizar, creá y verificá una copia consistente. [Procedimiento SQL
 
 ## Alcance que requiere validación externa
 
-El código y las pruebas locales no acreditan entregabilidad, permisos ni facturas de proveedores reales. Faltan el alojamiento elegido, su configuración, conexiones reales y el piloto con usuarios autorizados para medir utilidad, costo e intervención manual. No se publicó la plataforma ni se contrató infraestructura durante esta entrega. Las versiones anteriores y sus bases permanecen preservadas; no se migraron datos reales.
+El piloto gratuito de Render y Neon ya está publicado y su arranque está verificado. Quedan pendientes el recorrido autenticado en esa instalación, la conservación de cambios tras reiniciar y las conexiones reales, además del piloto con usuarios autorizados para medir utilidad, costo e intervención manual. El código y las pruebas locales no acreditan entregabilidad, permisos ni facturas de proveedores reales. No se contrató ningún servicio pago. Las versiones anteriores y sus bases permanecen preservadas; no se migraron datos reales.
