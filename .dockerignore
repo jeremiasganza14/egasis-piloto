@@ -1,0 +1,22 @@
+# Allow only the build manifest and application files into the build context.
+**
+!Dockerfile
+!requirements.txt
+!egasis/
+!egasis/**
+!static/
+!static/**
+**/__pycache__/
+**/*.py[cod]
+**/.env
+**/.env.*
+**/*.env
+**/*.db
+**/*.db-*
+**/*.sqlite
+**/*.sqlite3
+**/*.sqlite-*
+**/*.sqlite3-*
+**/*.pem
+**/*.key
+**/.development-key

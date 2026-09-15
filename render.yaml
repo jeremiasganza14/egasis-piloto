@@ -1,0 +1,32 @@
+# Free public pilot: one web service, external Neon database, no Render worker.
+# Repository root must contain this file, requirements.txt, egasis/ and static/.
+# No database, disk, cron, previews or paid service is provisioned here.
+services:
+  - type: web
+    name: egasis-piloto
+    runtime: python
+    plan: free
+    region: ohio
+    numInstances: 1
+    autoDeployTrigger: "off"
+    buildCommand: python -m pip install --no-cache-dir -r requirements.txt
+    startCommand: >-
+      export EGASIS_PUBLIC_URL="${EGASIS_PUBLIC_URL:-${RENDER_EXTERNAL_URL:-}}";
+      python -m egasis.deployment_check --target render --role web &&
+      exec python -m uvicorn egasis.app:app --host 0.0.0.0 --port "${PORT:-10000}" --workers 1
+    healthCheckPath: /api/health
+    envVars:
+      - key: EGASIS_ENV
+        value: production
+      - key: EGASIS_SIMULATION
+        value: "true"
+      - key: EGASIS_DATABASE_URL
+        sync: false
+      - key: EGASIS_SECRET_KEY
+        generateValue: true
+      - key: EGASIS_REGISTRATION_TOKEN
+        generateValue: true
+      - key: PYTHONDONTWRITEBYTECODE
+        value: "1"
+      - key: PYTHONUNBUFFERED
+        value: "1"
