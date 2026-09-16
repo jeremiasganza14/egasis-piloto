@@ -1,16 +1,20 @@
 # Egasis gratis por ahora: Render Free + Neon Free
 
-La preferencia vigente es **costo de alojamiento USD 0, sin tarjeta, compras ni upgrades**. El 15 de septiembre de 2026 se publicó la interfaz y API en [egasis-piloto.onrender.com](https://egasis-piloto.onrender.com), como piloto en simulación. La construcción, el arranque y las respuestas HTTP públicas están comprobados; todavía faltan el alta del propietario, el recorrido autenticado y la prueba de persistencia después de reiniciar. La configuración se conserva en [render.yaml](../render.yaml).
+La preferencia vigente es **costo de alojamiento USD 0, sin tarjeta, compras ni upgrades**. El 15 de septiembre de 2026 se publicó la interfaz y API en [egasis-piloto.onrender.com](https://egasis-piloto.onrender.com), como piloto en simulación. Al 16 de septiembre están comprobados la construcción, el arranque, el alta del propietario por el usuario, un recorrido público autenticado con datos ficticios y la conservación de sus datos tras un reinicio controlado. El recorrido cerró con cola vacía y campaña/cuenta pausadas. La configuración se conserva en [render.yaml](../render.yaml).
 
 ## Instalación actual y evidencia
 
-- Código privado: `jeremiasganza14/egasis-piloto`, commit desplegado `92fb10bb614d22e7303b739c687cbeabf7b00a21`.
-- Render Free en Ohio: servicio `srv-dakrvurl550s73alf3m0`, Blueprint `exs-daklqugu01pc73fjb1l0` y despliegue `dep-dakrvvbl550s73alf650`. El panel mostró `Deploy succeeded` / `Live`; construcción de 1 minuto y 10 segundos.
+- Código privado: `jeremiasganza14/egasis-piloto`, commit desplegado actual `ba0e70b0cddccd28003f9b23c1bf9bc2a02ccda8`; el despliegue inicial y la QA completa usaron `92fb10bb614d22e7303b739c687cbeabf7b00a21`. El 16 de septiembre, tras la autorización y confirmación de identidad del usuario, GitHub Settings confirmó «This repository is currently private.». La web del piloto continúa pública.
+- Render Free en Ohio: servicio `srv-dakrvurl550s73alf3m0`, Blueprint `exs-daklqugu01pc73fjb1l0` y despliegue actual `dep-dal9qru1egvs73f10tig`. El panel mostró `Deploy succeeded` / `Live`; duración de 1 minuto y 8 segundos. El despliegue inicial fue `dep-dakrvvbl550s73alf650`, de 1 minuto y 10 segundos.
 - Base nueva Neon Free `Egasis piloto`, PostgreSQL 17 en Ohio. Se configuró su conexión privada en Render con autorización del usuario. Los proyectos y servicios anteriores se conservaron.
 - Registros del arranque: `configuration_ready: true`, backend PostgreSQL, `simulation: true`, registro por invitación y arranque completo. `GET /api/health` y `GET /` respondieron HTTP 200.
 - Sincronización del Blueprint desactivada: **Auto Sync: No** y **Sync paused**, verificados en el panel. No hay worker permanente.
+- Recorrido público del 16 de septiembre: sesión del propietario conservada tras una noche y el despertar de Render Free; tres contactos ficticios cargados, campaña activada con dos primeros mensajes preparados y respuesta manual para Lucía procesada en simulación. El panel final mostró tres mensajes simulados, cero en cola, cero enviados reales, tres contactos, una respuesta y una reunión. La campaña y la cuenta ficticia quedaron pausadas. La acción de IA sin Gemini mostró un error claro y mantuvo el texto de respuesta.
+- Reserva ficticia confirmada para Lucía: 16 de septiembre de 2026, 10:00 en `America/Argentina/Buenos_Aires`, 30 minutos. El enlace recargado mostró la misma confirmación y el panel una reunión. El modal «Preparar» mostró contexto y enlaces de ficha y PowerPoint; las descargas públicas no se comprobaron.
+- Reinicio controlado confirmado en Render mediante el evento `Service restarted by you September 16, 2026 at 10:38 AM`. La web recargada mantuvo la sesión del propietario, tres contactos, tres mensajes simulados, cero en cola, cero reales, una respuesta, una reunión, la campaña pausada y el perfil sin oferta. La conversación conservó el mensaje recibido y la respuesta completa con estado Simulado; la reunión de Casa Norte mantuvo fecha, hora, duración y estado Confirmada.
+- Actualización posterior: corrección del aviso de respuesta en `static/app.js`, commit `ba0e70b0cddccd28003f9b23c1bf9bc2a02ccda8`, con comprobación de sintaxis aprobada. Render pudo clonar el código privado y completó la actualización. La conversación pública mostró «Estado de tu respuesta: Simulado» y conservó el historial; la sesión y los contadores siguieron intactos.
 
-Antes de crear el servicio, la cuenta Render mostró Hobby, sin tarjeta, gasto y proyección de USD 0 y cuotas disponibles. Las cuotas de Render se comparten con los servicios anteriores; no se modificaron sus configuraciones. La publicación no demuestra todavía un recorrido autenticado ni un piloto con clientes reales. [Estado completo de la entrega](ESTADO_ENTREGA.md).
+Antes de crear el servicio, la cuenta Render mostró Hobby, sin tarjeta, gasto y proyección de USD 0 y cuotas disponibles. Las cuotas de Render se comparten con los servicios anteriores; no se modificaron sus configuraciones. El recorrido público acreditado usa datos ficticios: no constituye un piloto con clientes reales ni acredita entregabilidad. [Estado completo de la entrega](ESTADO_ENTREGA.md).
 
 ## Qué incluye esta opción
 
@@ -28,7 +32,7 @@ No agregar una tarjeta ni elegir un plan de pago para resolver límites. Si una 
 
 ## Referencia de instalación
 
-Los pasos de creación siguientes documentan cómo se instaló el piloto y permiten reproducirlo. Para continuar con la instalación actual, usar los recursos identificados arriba y avanzar a las comprobaciones pendientes; no crear duplicados ni reutilizar los proyectos anteriores.
+Los pasos de creación siguientes documentan cómo se instaló el piloto y permiten reproducirlo. Para continuar con la instalación actual, usar los recursos identificados arriba y consultar las comprobaciones realizadas; no crear duplicados ni reutilizar los proyectos anteriores.
 
 ### 1. Código y base
 
@@ -76,11 +80,12 @@ En una base completamente vacía, el primer arranque de Egasis crea el esquema v
 Comprobaciones de la instalación actual:
 
 1. **Completado:** dirección HTTPS publicada, `GET /` y `GET /api/health` con respuesta HTTP 200.
-2. **Pendiente:** crear el espacio con la invitación del panel, sin publicarla, e ingresar como propietario.
-3. **Pendiente:** confirmar que la interfaz autenticada indique simulación y cargar los datos de ejemplo. Los registros del servidor ya muestran simulación activa.
-4. **Pendiente:** revisar una campaña, activar sus días y horario de prueba y procesar un ciclo simulado desde la interfaz. Comprobar el mensaje y su estado **simulado**; no debe llegar correo a nadie.
-5. **Pendiente:** cerrar y volver a abrir la sesión, y comprobar que los contactos y cambios siguen presentes. Repetir después de un reinicio del servicio: deben seguir en Neon.
-6. **Pendiente:** registrar el resultado del recorrido. La publicación está comprobada; el recorrido completo del piloto público aún no. Seguir la [guía de uso y medición](GUIA_DEL_PILOTO.md).
+2. **Completado:** el usuario creó el propietario; se verificó su sesión en la instalación pública, conservada tras la noche y el despertar de Render Free.
+3. **Completado:** interfaz autenticada en simulación y demo de tres contactos ficticios.
+4. **Completado:** campaña activada con dos primeros mensajes preparados y respuesta manual para Lucía procesada en simulación. Cierre con tres mensajes simulados, cero en cola y cero reales. Campaña y cuenta de prueba pausadas; cero campañas activas. La oferta, audiencia y firma del perfil quedaron vacías para configurar el negocio; la campaña conserva su oferta ficticia.
+5. **Completado:** reserva ficticia de Lucía confirmada y conservada al recargar su enlace; reunión visible en el panel y contexto de preparación disponible. Las descargas de ficha y PowerPoint no se comprobaron.
+6. **Completado:** reinicio controlado confirmado en Render y persistencia comprobada de la sesión, contactos, conversación completa, contadores, campaña pausada, perfil y reserva. No se verificó cerrar y volver a ingresar con contraseña; la contraseña permanece en manos del usuario.
+7. **Completado:** cierre del recorrido de demostración documentado arriba. Los siguientes pasos son configurar el negocio y sus conexiones, y seguir la [guía de uso y medición](GUIA_DEL_PILOTO.md) con usuarios reales.
 
 ## Actualizaciones y conservación de datos
 
