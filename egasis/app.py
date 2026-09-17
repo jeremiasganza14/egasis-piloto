@@ -131,6 +131,8 @@ def create_app(settings=None):
         result.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
         if request.url.path.startswith('/api/'):
             result.headers['Cache-Control'] = 'no-store'
+        else:
+            result.headers['Cache-Control'] = 'no-cache'
         return result
 
     def db_session():
@@ -581,6 +583,7 @@ def create_app(settings=None):
                 'sent':count(Message,Message.contact_id.in_(members),Message.direction=='outbound',Message.status=='sent'),
                 'simulated':count(Message,Message.contact_id.in_(members),Message.status=='simulated'),
                 'replies':count(Message,Message.contact_id.in_(members),Message.direction=='inbound',Message.classification.not_in(['bounce','out_of_office'])),
+                'interested':count(Contact,Contact.campaign_id==campaign.id,Contact.status=='interested'),
                 'meetings':count(Meeting,Meeting.contact_id.in_(members),Meeting.status=='confirmed'),
                 'cost_24h':round(db.scalar(select(func.sum(Usage.cost)).where(Usage.workspace_id==wid,Usage.contact_id.in_(members),Usage.created_at>=day)) or 0,4)})
         result['events']=[record(e) for e in db.scalars(select(Event).where(Event.workspace_id==wid).order_by(Event.id.desc()).limit(12)).all()]

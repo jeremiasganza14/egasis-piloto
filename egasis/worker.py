@@ -11,6 +11,8 @@ from .store import make_store
 
 log = logging.getLogger('egasis.worker')
 
+CLASSIFICATION_REVIEW_REASON = 'La clasificación de la conversación o del borrador requiere revisión antes de responder automáticamente.'
+
 def tick(factory,vault,settings,workspace_id=None):
     from .mail import MailEngine
     from .intelligence import Intelligence
@@ -45,10 +47,17 @@ def tick(factory,vault,settings,workspace_id=None):
                 workspace=db.get(Workspace,message.workspace_id)
                 existing=db.scalar(select(Message).where(Message.workspace_id==message.workspace_id,Message.idempotency_key==f'reply:{message.id}'))
                 if existing and existing.status in {'queued','sending','sent','simulated','uncertain'}:
-                    original.status='processed';db.commit();continue
+                    original.status='processed';original.error='';db.commit();continue
                 variables=set(re.findall(r'\{\{(.*?)\}\}',campaign.auto_reply_body or ''))
-                if (not (campaign.auto_reply_body or '').strip() or variables-{'name','company','offer','signature','booking_link'}
-                        or workspace.subscription_status not in {'pilot','active','trialing'}):
+                review_reason=''
+                if not (campaign.auto_reply_body or '').strip():
+                    review_reason='Falta configurar la plantilla aprobada para las respuestas automáticas.'
+                elif variables-{'name','company','offer','signature','booking_link'}:
+                    review_reason='La plantilla de respuesta automática contiene variables no permitidas.'
+                elif workspace.subscription_status not in {'pilot','active','trialing'}:
+                    review_reason='La suscripción del espacio no permite preparar respuestas automáticas.'
+                if review_reason:
+                    original.error=review_reason
                     original.status='needs_review';db.commit();continue
             draft=Intelligence(factory,vault).draft_reply(message.workspace_id,message.contact_id,message.id)
             with factory() as db:
@@ -58,7 +67,11 @@ def tick(factory,vault,settings,workspace_id=None):
                     contact=db.get(Contact,row.contact_id)
                     campaign=db.get(Campaign,contact.campaign_id)
                     workspace=db.get(Workspace,row.workspace_id)
-                    if original.classification not in {'interested','question'} or row.classification not in {'interested','question'} or not campaign.auto_reply_body.strip():
+                    if original.classification not in {'interested','question'} or row.classification not in {'interested','question'}:
+                        original.error=CLASSIFICATION_REVIEW_REASON
+                        original.status='needs_review';db.commit();continue
+                    if not campaign.auto_reply_body.strip():
+                        original.error='Falta configurar la plantilla aprobada para las respuestas automáticas.'
                         original.status='needs_review';db.commit();continue
                     values={'name':contact.name or 'equipo','company':contact.company,'offer':campaign.offer or workspace.offer,'signature':workspace.signature}
                     from .booking import booking_link
@@ -67,16 +80,21 @@ def tick(factory,vault,settings,workspace_id=None):
                     for key,value in values.items(): body=body.replace('{{'+key+'}}',value)
                     row.body=body
                     row.status='queued'
+                    row.error=''
                     if not db.scalar(select(Job.id).where(Job.message_id==row.id)):
                         db.add(Job(workspace_id=row.workspace_id,message_id=row.id))
-                    original.status='processed';db.commit()
+                    original.status='processed';original.error='';db.commit()
                 elif original:
+                    original.error='No hay un borrador disponible para preparar la respuesta automática.'
                     original.status='needs_review';db.commit()
         except Exception:
             # Leave visible for review; never repeatedly spend on the same unavailable action.
             with factory() as db:
                 original=db.get(Message,message.id)
-                if original: original.status='needs_review'
+                if original:
+                    original.status='needs_review'
+                    original.error=(CLASSIFICATION_REVIEW_REASON if original.classification in {'unsubscribe','not_interested','out_of_office','bounce','unknown','objection'}
+                                    else 'No se pudo preparar la respuesta automática. Revisá la conversación antes de continuar.')
                 db.add(Event(workspace_id=message.workspace_id,kind='reply_needs_review',detail=f'La respuesta {message.id} necesita revisión. No se envió ningún correo.'));db.commit()
     if workspace_id is not None:
         # Interactive simulation must not execute another tenant's work.
