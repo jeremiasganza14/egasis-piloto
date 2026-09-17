@@ -23,7 +23,7 @@ La persona responsable del negocio recorre estos pasos con quien acompaña el pi
 
 1. **Crear el espacio.** Elegir “Crear espacio”, indicar el nombre del negocio, un correo y una contraseña de al menos 12 caracteres. Una instalación con registro restringido puede pedir una invitación. Completar oferta, público, firma y zona horaria del negocio.
 2. **Probar en simulación.** Usar los datos de ejemplo o contactos de prueba. La simulación registra el recorrido sin entregar correos reales; respeta horarios y límites, por lo que una campaña fuera de horario no avanzará de inmediato. Quien acompaña confirma que el entorno sigue en simulación antes de procesar el ciclo de prueba.
-3. **Crear una campaña.** Definir nombre, oferta, cliente objetivo, asunto y primer correo. Se pueden personalizar los textos con `{{name}}`, `{{company}}`, `{{offer}}`, `{{signature}}` y `{{booking_link}}`. Revisar los datos necesarios para que el mensaje tenga sentido. Egasis añade el enlace de baja.
+3. **Crear una campaña.** Definir nombre, oferta, cliente objetivo, asunto y primer correo. Se pueden personalizar los textos con `{{name}}`, `{{company}}`, `{{offer}}`, `{{signature}}` y `{{booking_link}}`. Usar **Ver primer correo** para revisar el asunto y el cuerpo con María de Empresa de ejemplo. La vista previa se actualiza al editar el formulario, sin guardar la campaña ni poner mensajes en cola. Los enlaces de reserva y baja se muestran como referencias de ejemplo; cada destinatario recibe sus enlaces personales al enviar. Revisar los datos necesarios para que el mensaje tenga sentido. Egasis añade el enlace de baja.
 4. **Elegir días, horario y límite diario.** Empezar con un volumen que el equipo pueda revisar y atender. La campaña se guarda como borrador. Al activarla, el primer correo se prepara y envía automáticamente dentro de esa configuración: no pide aprobación individual para cada destinatario. Los seguimientos están deshabilitados.
 5. **Elegir cómo responder.** Usar una de las dos modalidades de la sección siguiente y comprobar el texto de la plantilla si corresponde.
 6. **Agregar contactos de prueba y revisar el resultado.** Confirmar la campaña asignada, procesar un ciclo de simulación y abrir la conversación. Verificar destinatario, personalización, firma, enlace de baja y estado del mensaje. Un estado “simulado” no significa que se haya enviado un correo.
@@ -35,6 +35,8 @@ Para habilitar envíos reales, conectar una cuenta de correo compatible con SMTP
 **Con revisión:** la persona lee la conversación, puede preparar un borrador con IA si está conectada, lo corrige y elige poner la respuesta en cola. El borrador no se envía por generarlo. Verificar especialmente nombres, hechos, precios, compromisos y la pregunta que queremos hacer.
 
 **Automática con plantilla:** configurar previamente el texto de respuesta de la campaña. Cuando la clasificación con IA identifica interés o una consulta apta para ese recorrido, Egasis usa esa plantilla configurada. Las objeciones y los casos inciertos quedan para revisión. No asumir que esta modalidad resuelve cualquier pregunta ni que redacta y envía libremente una negociación. Si la IA no está disponible, revisar el caso sin contar con una respuesta automática.
+
+La bandeja muestra la cuenta remitente y la clasificación de la última respuesta. Antes de intervenir, leer el motivo de revisión o la indicación de la modalidad de la campaña y cualquier detalle de error junto al mensaje. Esos datos ayudan a distinguir una revisión elegida por el negocio de una respuesta automática que no pudo completarse.
 
 Las bajas y exclusiones impiden nuevos envíos. Si aparece un envío incierto, comprobar la cuenta de correo antes de decidir qué ocurrió: no volver a enviarlo a ciegas. Una conversación mantiene la cuenta remitente que se le asignó.
 
@@ -70,6 +72,7 @@ Elegir una fecha de inicio y una de revisión. Registrar una muestra del trabajo
 | Contactos revisados e incorporados | | | |
 | Primeros correos enviados / simulados, separados | | | |
 | Respuestas recibidas y conversaciones útiles, revisadas por una persona | | | |
+| Contactos actualmente interesados, total y por campaña | | | |
 | Borradores útiles sin cambios / corregidos / descartados | | | |
 | Motivos de corrección: hechos, tono, oferta o compromisos | | | |
 | Reuniones propuestas / aceptadas por el prospecto / realizadas | | | |
@@ -78,6 +81,8 @@ Elegir una fecha de inicio y una de revisión. Registrar una muestra del trabajo
 | Minutos para revisar, responder y coordinar reuniones | | | |
 | Minutos para corregir problemas y configurar el sistema | | | |
 | Costos observados de los servicios conectados | | | |
+
+El Resumen muestra el total de **Interesados** y Resultados por campaña lo separa por campaña. La métrica cuenta contactos cuyo estado actual es “Interesado” (`interested`), no la cantidad de mensajes recibidos ni un total histórico de personas que alguna vez expresaron interés. Registrar la fecha al compararla entre jornadas.
 
 Usar el panel como apoyo y contrastar los casos importantes con conversaciones y calendario. Un correo aceptado por el proveedor no garantiza llegada a la bandeja de entrada. El costo de IA mostrado es una estimación o reserva según la configuración, no la factura del proveedor.
 
