@@ -86,6 +86,8 @@ def install_ai(monkeypatch, factory, vault, handler=None, api_key='mock-api-key'
 def test_automatic_reply_uses_approved_template_and_is_processed_once(setup, monkeypatch, classification):
     factory, vault, settings, (one, _) = setup
     calls = install_ai(monkeypatch, factory, vault, lambda request: gemini_response(classification))
+    with factory() as db:
+        db.get(Message, one['mid']).error = 'Motivo anterior de revisión'; db.commit()
     result = tick(factory, vault, settings, workspace_id=one['wid'])
     assert result['result']['status'] == 'simulated'
     with factory() as db:
@@ -95,6 +97,7 @@ def test_automatic_reply_uses_approved_template_and_is_processed_once(setup, mon
         assert outgoing.idempotency_key == f"reply:{one['mid']}"
         assert outgoing.in_reply_to == '<inbound-one@example.com>'
         assert db.get(Message, one['mid']).status == 'processed'
+        assert db.get(Message, one['mid']).error == ''
         assert db.query(Job).filter_by(workspace_id=one['wid']).count() == 1
         assert db.query(Usage).filter_by(workspace_id=one['wid']).count() == 1
     tick(factory, vault, settings, workspace_id=one['wid'])
@@ -115,16 +118,36 @@ def test_review_mode_does_not_generate_or_queue_automatically(setup, monkeypatch
         assert db.query(Job).count() == 0
 
 
-def test_missing_approved_template_never_generates_or_sends(setup, monkeypatch):
+@pytest.mark.parametrize('template', ['', '   '])
+def test_missing_approved_template_never_generates_or_sends(setup, monkeypatch, template):
     factory, vault, settings, (one, _) = setup
     calls = install_ai(monkeypatch, factory, vault)
     with factory() as db:
-        db.get(Campaign, one['campaign']).auto_reply_body = ''; db.commit()
+        db.get(Campaign, one['campaign']).auto_reply_body = template; db.commit()
     tick(factory, vault, settings, workspace_id=one['wid'])
     tick(factory, vault, settings, workspace_id=one['wid'])
     assert not calls
     with factory() as db:
         assert db.query(Job).count() == 0
+        inbound = db.get(Message, one['mid'])
+        assert inbound.status == 'needs_review'
+        assert inbound.error == 'Falta configurar la plantilla aprobada para las respuestas automáticas.'
+
+
+def test_blocked_subscription_explains_review_without_generating_or_spending(setup, monkeypatch):
+    factory, vault, settings, (one, _) = setup
+    calls = install_ai(monkeypatch, factory, vault)
+    with factory() as db:
+        db.get(Workspace, one['wid']).subscription_status = 'past_due'; db.commit()
+    tick(factory, vault, settings, workspace_id=one['wid'])
+    tick(factory, vault, settings, workspace_id=one['wid'])
+    assert not calls
+    with factory() as db:
+        inbound = db.get(Message, one['mid'])
+        assert inbound.status == 'needs_review'
+        assert inbound.error == 'La suscripción del espacio no permite preparar respuestas automáticas.'
+        assert db.query(Job).count() == 0
+        assert db.query(Usage).count() == 0
 
 
 @pytest.mark.parametrize('classification', [
@@ -138,6 +161,7 @@ def test_unsafe_or_review_required_classification_never_sends(setup, monkeypatch
     with factory() as db:
         assert db.query(Job).filter_by(workspace_id=one['wid']).count() == 0
         assert db.get(Message, one['mid']).status == 'needs_review'
+        assert db.get(Message, one['mid']).error == 'La clasificación de la conversación o del borrador requiere revisión antes de responder automáticamente.'
         assert db.query(Message).filter(Message.workspace_id == one['wid'], Message.status.in_(['queued', 'simulated', 'sent'])).count() == 0
         if classification in {'unsubscribe', 'not_interested', 'bounce'}:
             assert db.query(Suppression).filter_by(workspace_id=one['wid']).count() == 1
@@ -159,12 +183,14 @@ def test_existing_unknown_draft_cannot_bypass_worker_classification_gate(setup, 
     with factory() as db:
         assert db.query(Job).count() == 0
         assert db.get(Message, one['mid']).status == 'needs_review'
+        assert db.get(Message, one['mid']).error == 'La clasificación de la conversación o del borrador requiere revisión antes de responder automáticamente.'
 
 
 def test_existing_human_reply_is_processed_without_ai_rewrite_or_duplicate_job(setup, monkeypatch):
     factory, vault, settings, (one, _) = setup
     calls = install_ai(monkeypatch, factory, vault)
     with factory() as db:
+        db.get(Message, one['mid']).error = 'Motivo anterior de revisión'
         replied = Message(workspace_id=one['wid'], contact_id=one['cid'], account_id=one['aid'],
                           direction='outbound', status='queued', subject='Re: Consulta', body='Respuesta escrita por Clara.',
                           classification='unclassified', idempotency_key=f"reply:{one['mid']}", in_reply_to='<inbound-one@example.com>')
@@ -176,9 +202,63 @@ def test_existing_human_reply_is_processed_without_ai_rewrite_or_duplicate_job(s
     assert not calls
     with factory() as db:
         assert db.get(Message, one['mid']).status == 'processed'
+        assert db.get(Message, one['mid']).error == ''
         assert db.get(Message, reply_id).body == 'Respuesta escrita por Clara.'
         assert db.get(Message, reply_id).status == 'simulated'
         assert db.query(Job).filter_by(workspace_id=one['wid']).count() == 1
+
+
+def test_queueing_an_existing_approved_draft_clears_stale_review_reasons(setup, monkeypatch):
+    from egasis.mail import MailEngine
+    factory, vault, settings, (one, _) = setup
+    calls = install_ai(monkeypatch, factory, vault)
+    monkeypatch.setattr(MailEngine, 'run_once', lambda *args, **kwargs: {'status': 'idle'})
+    with factory() as db:
+        inbound = db.get(Message, one['mid'])
+        inbound.classification, inbound.error = 'question', 'Motivo anterior de revisión'
+        draft = Message(workspace_id=one['wid'], contact_id=one['cid'], account_id=one['aid'],
+                        direction='outbound', status='draft', subject='Re: Consulta', body='Borrador aprobado',
+                        classification='question', idempotency_key=f"reply:{one['mid']}", error='Error anterior del borrador')
+        db.add(draft); db.commit(); draft_id = draft.id
+    tick(factory, vault, settings, workspace_id=one['wid'])
+    assert not calls
+    with factory() as db:
+        assert db.get(Message, one['mid']).status == 'processed'
+        assert db.get(Message, one['mid']).error == ''
+        assert db.get(Message, draft_id).status == 'queued'
+        assert db.get(Message, draft_id).error == ''
+        assert db.query(Job).filter_by(message_id=draft_id).count() == 1
+
+
+def test_missing_draft_explains_review_without_retrying(setup, monkeypatch):
+    factory, vault, settings, (one, _) = setup
+    attempts = []
+    def no_draft(self, *args):
+        attempts.append(args)
+        return None
+    monkeypatch.setattr(Intelligence, 'draft_reply', no_draft)
+    tick(factory, vault, settings, workspace_id=one['wid'])
+    tick(factory, vault, settings, workspace_id=one['wid'])
+    assert len(attempts) == 1
+    with factory() as db:
+        inbound = db.get(Message, one['mid'])
+        assert inbound.status == 'needs_review'
+        assert inbound.error == 'No hay un borrador disponible para preparar la respuesta automática.'
+        assert db.query(Job).count() == 0
+        assert db.query(Usage).count() == 0
+
+
+def test_unexpected_failure_uses_safe_review_reason(setup, monkeypatch):
+    factory, vault, settings, (one, _) = setup
+    def fail(self, *args):
+        raise RuntimeError('internal host: credential=private-test-token')
+    monkeypatch.setattr(Intelligence, 'draft_reply', fail)
+    tick(factory, vault, settings, workspace_id=one['wid'])
+    with factory() as db:
+        inbound = db.get(Message, one['mid'])
+        assert inbound.status == 'needs_review'
+        assert inbound.error == 'No se pudo preparar la respuesta automática. Revisá la conversación antes de continuar.'
+        assert db.query(Job).count() == 0
 
 
 def test_suppressed_contact_is_not_sent_or_charged(setup, monkeypatch):
@@ -217,6 +297,7 @@ def test_provider_failure_is_visible_and_never_repeatedly_spends(setup, monkeypa
     assert len(calls) == 1
     with factory() as db:
         assert db.get(Message, one['mid']).status == 'needs_review'
+        assert db.get(Message, one['mid']).error == 'No se pudo preparar la respuesta automática. Revisá la conversación antes de continuar.'
         assert db.query(Job).count() == 0
         usage = db.scalar(select(Usage).where(Usage.workspace_id == one['wid']))
         assert usage.operation.startswith('uncertain:') and usage.cost > 0
@@ -259,12 +340,32 @@ def test_workspace_simulation_tick_leaves_other_campaign_inbound_and_job_untouch
 
 def test_invalid_template_variable_never_reaches_delivery(setup, monkeypatch):
     factory, vault, settings, (one, _) = setup
-    install_ai(monkeypatch, factory, vault)
+    calls = install_ai(monkeypatch, factory, vault)
     with factory() as db:
         db.get(Campaign, one['campaign']).auto_reply_body = 'Hola {{secret}}'; db.commit()
     tick(factory, vault, settings, workspace_id=one['wid'])
+    assert not calls
     with factory() as db:
         assert db.query(Message).filter(Message.workspace_id == one['wid'], Message.status.in_(['queued', 'simulated', 'sent'])).count() == 0
+        inbound = db.get(Message, one['mid'])
+        assert inbound.status == 'needs_review'
+        assert inbound.error == 'La plantilla de respuesta automática contiene variables no permitidas.'
+
+
+def test_template_removed_during_generation_explains_review(setup, monkeypatch):
+    factory, vault, settings, (one, _) = setup
+    def response(request):
+        with factory() as db:
+            db.get(Campaign, one['campaign']).auto_reply_body = ''; db.commit()
+        return gemini_response()
+    calls = install_ai(monkeypatch, factory, vault, response)
+    tick(factory, vault, settings, workspace_id=one['wid'])
+    assert len(calls) == 1
+    with factory() as db:
+        inbound = db.get(Message, one['mid'])
+        assert inbound.status == 'needs_review'
+        assert inbound.error == 'Falta configurar la plantilla aprobada para las respuestas automáticas.'
+        assert db.query(Job).count() == 0
 
 
 def test_automatic_approved_booking_link_is_signed_without_creating_reservation(setup, monkeypatch):

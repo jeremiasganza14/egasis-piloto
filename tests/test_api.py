@@ -53,6 +53,13 @@ def test_authentication_and_cookie(client):
     assert 'httponly' in result.headers['set-cookie'].lower()
     assert 'samesite=strict' in result.headers['set-cookie'].lower()
 
+def test_public_assets_revalidate_and_private_responses_are_not_cached(client):
+    for route in ['/', '/book', '/static/app.js', '/static/style.css']:
+        response=client.get(route)
+        assert response.status_code==200
+        assert response.headers['cache-control']=='no-cache'
+    assert client.get('/api/me').headers['cache-control']=='no-store'
+
 def test_cross_origin_mutation_rejected(client):
     assert client.post('/api/demo',headers={'Origin':'https://attacker.invalid'}).status_code==403
 
@@ -241,12 +248,30 @@ def test_reviewed_knowledge_is_scoped_and_owner_controlled(app,client):
 def test_campaign_results_attribute_costs_and_confirmed_outcomes(app,client):
     from egasis.models import Meeting, Usage
     first=campaign(client);person=contact(client,first['id']);second=campaign(client,name='Otra campaña')
+    contact(client,first['id'],email='pending@company.example')
+    second_person=contact(client,second['id'],email='second@company.example')
+    second_other=contact(client,second['id'],email='third@company.example')
+    with TestClient(app) as other:
+        result=other.post('/api/register',json={'name':'Otro negocio','email':'metrics@other.example','password':'A-long-test-password'})
+        assert result.status_code==200
+        foreign_campaign=campaign(other);foreign_person=contact(other,foreign_campaign['id'])
+        with app.state.factory() as db:
+            db.get(Contact,foreign_person['id']).status='interested';db.commit()
+        foreign_metrics=other.get('/api/metrics').json()
+        assert foreign_metrics['interested']==1
+        assert [(r['id'],r['interested']) for r in foreign_metrics['campaign_results']]==[(foreign_campaign['id'],1)]
     with app.state.factory() as db:
+        for interested in [person,second_person,second_other]:
+            db.get(Contact,interested['id']).status='interested'
         db.add(Usage(workspace_id=person['workspace_id'],contact_id=person['id'],operation='research',model='fixture',cost=.12))
         db.add(Usage(workspace_id=person['workspace_id'],contact_id=person['id'],operation='research',model='fixture',cost=2,created_at=time.time()-90000))
         db.add(Meeting(workspace_id=person['workspace_id'],contact_id=person['id'],starts_at=time.time()+3600,status='proposed'))
         db.add(Message(workspace_id=person['workspace_id'],contact_id=person['id'],direction='outbound',subject='Test',body='Fixture',status='simulated'))
         db.commit()
-    rows={r['id']:r for r in client.get('/api/metrics').json()['campaign_results']}
+    metrics=client.get('/api/metrics').json()
+    rows={r['id']:r for r in metrics['campaign_results']}
+    assert set(rows)=={first['id'],second['id']}
+    assert metrics['interested']==3
+    assert rows[first['id']]['interested']==1 and rows[second['id']]['interested']==2
     assert rows[first['id']]['cost_24h']==.12 and rows[second['id']]['cost_24h']==0
     assert rows[first['id']]['sent']==0 and rows[first['id']]['simulated']==1 and rows[first['id']]['meetings']==0
